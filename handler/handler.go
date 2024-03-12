@@ -30,6 +30,12 @@ func (mc *MutexCounter) Get() uint {
 	return mc.val
 }
 
+func CreateHandler() *Handler {
+	return &Handler{
+		counter: &MutexCounter{},
+	}
+}
+
 func (h *Handler) Ping(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(200)
 	response.Write([]byte("Hello world !!!"))
