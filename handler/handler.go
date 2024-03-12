@@ -88,9 +88,11 @@ func (h *Handler) RedirectTo(response http.ResponseWriter, request *http.Request
 	vars := mux.Vars(request)
 	key := vars["id"]
 
+	shortenedURL := fmt.Sprintf("http://localhost:3030/url/%v", key)
+
 	log.Info().Msgf("Shortened URL received key : %v", key)
 
-	val, err := h.database.Get(key)
+	val, err := h.database.Get(shortenedURL)
 
 	log.Info().Msgf("Shortened URL received value : %v", val)
 
