@@ -20,6 +20,7 @@ func (s *Server) Start() error {
 	handler := handler.Handler{}
 
 	router.HandleFunc("/ping", handler.Ping).Methods(("GET"))
+	router.HandleFunc("/create-short-url", handler.CreateShortURL).Methods(("POST"))
 
 	fmt.Printf("Starting server at port : %v\n", s.Port)
 	err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%v", s.Port), router)
