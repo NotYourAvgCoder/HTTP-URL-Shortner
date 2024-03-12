@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 
+	"github.com/rs/zerolog/log"
+
 	inmemorystorage "github.com/NotYourAvgCoder/HTTP-URL-Shortner/in_memory_storage"
+	"github.com/gorilla/mux"
 )
 
 type MutexCounter struct {
@@ -38,7 +40,7 @@ func CreateHandler() *Handler {
 	repo := inmemorystorage.InitializeRedisDB("0.0.0.0:6379", "", 0)
 	err := repo.Connect()
 	if err != nil {
-		log.Fatalf("error while connecting to redis server : %v", err)
+		log.Fatal().Msgf("error while connecting to redis server : %v", err)
 	}
 	return &Handler{
 		counter:  &MutexCounter{},
@@ -70,7 +72,7 @@ func (h *Handler) CreateShortURL(response http.ResponseWriter, request *http.Req
 	fmt.Printf("URL value retrevived : %v\n", url)
 	h.counter.Inc()
 
-	shortenedURL := fmt.Sprintf("http://localhost:3030/%v", h.counter.Get())
+	shortenedURL := fmt.Sprintf("http://localhost:3030/url/%v", h.counter.Get())
 
 	err = h.database.Insert(shortenedURL, url)
 
@@ -80,6 +82,22 @@ func (h *Handler) CreateShortURL(response http.ResponseWriter, request *http.Req
 
 	response.WriteHeader(200)
 	response.Write([]byte(shortenedURL))
+}
+
+func (h *Handler) RedirectTo(response http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	key := vars["id"]
+
+	log.Info().Msgf("Shortened URL received key : %v", key)
+
+	val, err := h.database.Get(key)
+
+	log.Info().Msgf("Shortened URL received value : %v", val)
+
+	if err != nil {
+		http.Error(response, fmt.Sprintf("error while trying to fetch url : %v", err), http.StatusInternalServerError)
+	}
+	http.Redirect(response, request, val, http.StatusAccepted)
 }
 
 func getValueFromBody(key string, reqBody io.ReadCloser) (string, error) {
