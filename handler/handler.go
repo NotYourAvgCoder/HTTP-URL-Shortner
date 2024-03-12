@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
+
+	inmemorystorage "github.com/NotYourAvgCoder/HTTP-URL-Shortner/in_memory_storage"
 )
 
 type MutexCounter struct {
@@ -14,7 +17,8 @@ type MutexCounter struct {
 }
 
 type Handler struct {
-	counter *MutexCounter
+	counter  *MutexCounter
+	database *inmemorystorage.RedisDatabase
 }
 
 func (mc *MutexCounter) Inc() uint {
@@ -31,8 +35,14 @@ func (mc *MutexCounter) Get() uint {
 }
 
 func CreateHandler() *Handler {
+	repo := inmemorystorage.InitializeRedisDB("0.0.0.0:6379", "", 0)
+	err := repo.Connect()
+	if err != nil {
+		log.Fatalf("error while connecting to redis server : %v", err)
+	}
 	return &Handler{
-		counter: &MutexCounter{},
+		counter:  &MutexCounter{},
+		database: repo,
 	}
 }
 
@@ -60,8 +70,16 @@ func (h *Handler) CreateShortURL(response http.ResponseWriter, request *http.Req
 	fmt.Printf("URL value retrevived : %v\n", url)
 	h.counter.Inc()
 
+	shortenedURL := fmt.Sprintf("http://localhost:3030/%v", h.counter.Get())
+
+	err = h.database.Insert(shortenedURL, url)
+
+	if err != nil {
+		http.Error(response, fmt.Sprintf("error while trying to store url : %v", err), http.StatusInternalServerError)
+	}
+
 	response.WriteHeader(200)
-	response.Write([]byte(fmt.Sprintf("http://localhost:3030/%v", h.counter.Get())))
+	response.Write([]byte(shortenedURL))
 }
 
 func getValueFromBody(key string, reqBody io.ReadCloser) (string, error) {

@@ -17,7 +17,7 @@ func (s *Server) Start() error {
 	router := mux.NewRouter()
 
 	fmt.Println("Creating handler !!!")
-	handler := handler.Handler{}
+	handler := handler.CreateHandler()
 
 	router.HandleFunc("/ping", handler.Ping).Methods(("GET"))
 	router.HandleFunc("/create-short-url", handler.CreateShortURL).Methods(("POST"))
