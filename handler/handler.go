@@ -103,6 +103,7 @@ func (h *Handler) RedirectTo(response http.ResponseWriter, request *http.Request
 }
 
 func getValueFromBody(key string, reqBody io.ReadCloser) (string, error) {
+	// So here we're reading byte stream of request body
 	body, err := io.ReadAll(reqBody)
 
 	if err != nil {
@@ -115,7 +116,7 @@ func getValueFromBody(key string, reqBody io.ReadCloser) (string, error) {
 		return "", err
 	}
 
-	// Retrieve the value of the "url" key
+	// Retrieve the value of the "url" key and explicity convert it to string
 	val, ok := data[key].(string)
 	if !ok {
 		return "", fmt.Errorf("missing key %v from request body", key)
